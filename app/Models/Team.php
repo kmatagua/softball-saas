@@ -27,4 +27,9 @@ class Team extends Model
     {
         return $this->belongsTo(Group::class);
     }
+
+    public function players()
+    {
+        return $this->hasMany(Player::class);
+    }
 }

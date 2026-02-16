@@ -4,20 +4,16 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 
-class GameEvent extends Model
+class GameLineup extends Model
 {
-    protected $table = 'game_events';
-
     protected $fillable = [
         'game_id',
         'team_id',
         'player_id',
-        'pitcher_id',
-        'inning',
-        'event_type',
-        'runs',
-        'rbi',
-        'scored_player_id',
+        'batting_order',
+        'field_position', // 👈 agregado
+        'is_starter', // 👈 agregado
+        'is_active'
     ];
 
     public function game()
@@ -29,16 +25,9 @@ class GameEvent extends Model
     {
         return $this->belongsTo(Team::class);
     }
+
     public function player()
     {
         return $this->belongsTo(Player::class);
-    }
-    public function pitcher()
-    {
-        return $this->belongsTo(Player::class, 'pitcher_id');
-    }
-    public function scoredPlayer()
-    {
-        return $this->belongsTo(Player::class, 'scored_player_id');
     }
 }

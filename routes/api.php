@@ -7,6 +7,9 @@ use App\Http\Controllers\Api\LeagueController;
 use App\Http\Controllers\Api\TeamController;
 use App\Http\Controllers\Api\GameController;
 use App\Http\Controllers\Api\GameEventController;
+use App\Http\Controllers\Api\GroupController;
+use App\Http\Controllers\Api\PlayerController;
+use App\Http\Controllers\Api\GameLineupController;
 
 /*
 |--------------------------------------------------------------------------
@@ -57,6 +60,14 @@ Route::middleware(['auth:sanctum'])->group(function () {
         Route::post('/games/{game}/start', [GameController::class, 'start']);
 
         Route::post('/game-events', [GameEventController::class, 'store']);
+
+        Route::get('/groups/{id}/standings', [GroupController::class, 'standings']);
+
+        Route::get('/players/{id}/stats', [PlayerController::class, 'stats']);
+
+        Route::get('/leagues/{id}/leaderboard', [LeagueController::class, 'leaderboard']);
+
+        Route::get('/players/{id}/advanced-stats', [PlayerController::class, 'advancedStats']);
     });
 
     /*
@@ -70,5 +81,7 @@ Route::middleware(['auth:sanctum'])->group(function () {
         Route::get('/my-league', [LeagueController::class, 'myLeague']);
 
     });
+
+    Route::post('/save-lineups', [GameLineupController::class, 'store']);
 
 });
