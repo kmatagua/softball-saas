@@ -10,7 +10,9 @@ class Team extends Model
     use BelongsToLeague;
     protected $fillable = [
         'name',
-        'league_id'
+        'league_id',
+        'group_id',
+        'image'
     ];
 
     public function homeGames()

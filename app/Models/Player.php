@@ -12,7 +12,8 @@ class Player extends Model
         'last_name',
         'dni',
         'jersey_number',
-        'batting_order' // 👈 agregado
+        'batting_order',
+        'image'
     ];
 
     public function team()

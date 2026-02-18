@@ -12,7 +12,8 @@ class League extends Model
     protected $fillable = [
         'name',
         'slug',
-        'active'
+        'active',
+        'image'
     ];
 
     public function users()

@@ -9,6 +9,11 @@ class Group extends Model
 {
     use HasFactory;
 
+    protected $fillable = [
+        'name',
+        'league_id'
+    ];
+
     public function league()
     {
         return $this->belongsTo(League::class);
