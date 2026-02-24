@@ -11,8 +11,14 @@ class Group extends Model
 
     protected $fillable = [
         'name',
-        'league_id'
+        'league_id',
+        'tournament_id',
     ];
+
+    public function tournament()
+    {
+        return $this->belongsTo(Tournament::class);
+    }
 
     public function league()
     {

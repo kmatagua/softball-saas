@@ -5,18 +5,19 @@ namespace App\Http\Controllers\Web;
 use App\Http\Controllers\Controller;
 use App\Models\League;
 use App\Models\Team;
+use App\Models\Tournament;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 
 class TeamWebController extends Controller
 {
-    public function create(League $league)
+    public function create(League $league, Tournament $tournament)
     {
-        $groups = $league->groups;
-        return view('admin.teams.create', compact('league', 'groups'));
+        $groups = $tournament->groups;
+        return view('admin.teams.create', compact('league', 'tournament', 'groups'));
     }
 
-    public function store(Request $request, League $league)
+    public function store(Request $request, League $league, Tournament $tournament)
     {
         $request->validate([
             'name' => 'required|string|max:255',
@@ -35,7 +36,13 @@ class TeamWebController extends Controller
                 ->store('teams', 'public');
         }
 
-        $league->teams()->create($data);
+        $tournament->teams()->create([
+            'name' => $request->name,
+            'group_id' => $request->group_id,
+            'league_id' => $league->id,
+            'tournament_id' => $tournament->id,
+            'image' => $data['image']
+        ]);
 
         return redirect()
             ->route('admin.leagues.show', $league)

@@ -21,6 +21,9 @@ class DatabaseSeeder extends Seeder
         $this->call([
             RolesSeeder::class,
             SuperAdminSeeder::class,
+            DemoLeagueSeeder::class,
+            DemoLeagueSeederEarly::class,
+            DemoLeagueSeederMid::class,
         ]);
     }
 }

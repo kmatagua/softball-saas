@@ -11,6 +11,7 @@ class Team extends Model
     protected $fillable = [
         'name',
         'league_id',
+        'tournament_id',
         'group_id',
         'image'
     ];
@@ -23,6 +24,11 @@ class Team extends Model
     public function awayGames()
     {
         return $this->hasMany(Game::class, 'away_team_id');
+    }
+
+    public function tournament()
+    {
+        return $this->belongsTo(Tournament::class);
     }
 
     public function group()

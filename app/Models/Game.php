@@ -13,6 +13,8 @@ class Game extends Model
 
     protected $fillable = [
         'league_id',
+        'tournament_id',
+        'group_id',
         'home_team_id',
         'away_team_id',
         'stage',
@@ -26,15 +28,23 @@ class Game extends Model
         'first_base_player_id',
         'second_base_player_id',
         'third_base_player_id',
-        'current_batter_home',      // 👈 agregado
-        'current_batter_away',      // 👈 agregado
+        'current_batter_home',
+        'current_batter_away',
     ];
 
-    /*
-    |--------------------------------------------------------------------------
-    | RELACIONES EXISTENTES
-    |--------------------------------------------------------------------------
-    */
+    protected $casts = [
+        'stage' => GameStage::class,
+    ];
+
+    public function league()
+    {
+        return $this->belongsTo(League::class);
+    }
+
+    public function tournament()
+    {
+        return $this->belongsTo(Tournament::class);
+    }
 
     public function homeTeam()
     {
@@ -46,9 +56,9 @@ class Game extends Model
         return $this->belongsTo(Team::class, 'away_team_id');
     }
 
-    public function league()
+    public function group()
     {
-        return $this->belongsTo(League::class);
+        return $this->belongsTo(Group::class);
     }
 
     public function events()
@@ -56,30 +66,8 @@ class Game extends Model
         return $this->hasMany(GameEvent::class);
     }
 
-    /*
-    |--------------------------------------------------------------------------
-    | NUEVA RELACIÓN: LINEUPS POR JUEGO
-    |--------------------------------------------------------------------------
-    */
-
     public function lineups()
     {
         return $this->hasMany(GameLineup::class);
-    }
-
-    public function homeLineup()
-    {
-        return $this->lineups()
-            ->where('team_id', $this->home_team_id)
-            ->where('is_active', true)
-            ->orderBy('batting_order');
-    }
-
-    public function awayLineup()
-    {
-        return $this->lineups()
-            ->where('team_id', $this->away_team_id)
-            ->where('is_active', true)
-            ->orderBy('batting_order');
     }
 }
