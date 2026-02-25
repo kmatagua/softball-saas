@@ -11,7 +11,7 @@
         </div>
 
         <a href="{{ route('admin.teams.show', [$league, $team]) }}" class="btn btn-outline-light btn-sm">
-            ← Volver al Equipo
+            < Volver al Equipo
         </a>
     </div>
     @if ($errors->any())

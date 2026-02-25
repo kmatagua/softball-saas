@@ -18,7 +18,7 @@
                         justify-content:center;
                         margin-right:20px;
                         font-size:28px;">
-                🥎
+            
             </div>
         @endif
 
@@ -86,7 +86,7 @@
 
                     <a href="{{ route('admin.tournaments.standings', [$league, $tournament]) }}"
                        class="btn btn-sm btn-info">
-                        📊 Tabla
+                        Tabla
                     </a>
                 </div>
             </div>

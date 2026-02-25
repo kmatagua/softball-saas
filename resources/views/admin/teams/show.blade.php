@@ -18,7 +18,7 @@
                                                 align-items:center;
                                                 justify-content:center;
                                                 font-size:32px;">
-                    🛡️
+                    
                 </div>
             @endif
 
@@ -32,7 +32,7 @@
         </div>
 
         <a href="{{ route('admin.leagues.show', $league) }}" class="btn btn-outline-light btn-sm">
-            ← Volver a Liga
+            < Volver a Liga
         </a>
 
     </div>
@@ -74,7 +74,7 @@
 
                             @if($player->dni)
                                 <small class="text-muted ms-2">
-                                    DNI: {{ $player->dni }}
+                                    DNI o CE: {{ $player->dni }}
                                 </small>
                             @endif
                         </div>

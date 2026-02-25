@@ -15,7 +15,7 @@
 
         <a href="{{ route('admin.leagues.show', $league) }}"
            class="btn btn-secondary btn-sm">
-            ← Volver a Liga
+            < Volver a Liga
         </a>
     </div>
 
