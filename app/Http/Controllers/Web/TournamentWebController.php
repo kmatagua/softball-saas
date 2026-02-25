@@ -68,4 +68,23 @@ class TournamentWebController extends Controller
         return view('admin.tournaments.standings',
             compact('league', 'tournament', 'standings'));
     }
+
+    public function show(League $league, Tournament $tournament)
+    {
+        $tournament->load(['groups.teams']);
+
+        return view('admin.tournaments.show',
+            compact('league', 'tournament'));
+    }
+
+    public function generatePlayoffs(League $league, Tournament $tournament)
+    {
+        $generated = $tournament->generatePlayoffs();
+
+        if (!$generated) {
+            return back()->with('error', 'No se pudieron generar los playoffs.');
+        }
+
+        return back()->with('success', 'Semifinales generadas correctamente.');
+    }
 }

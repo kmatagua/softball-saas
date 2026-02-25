@@ -188,4 +188,108 @@ class Tournament extends Model
 
         return $standings;
     }
+
+    public function generatePlayoffs()
+    {
+        $standings = $this->standingsByGroup();
+        $qualifyCount = $this->qualifies_per_group;
+
+        $directQualified = [];
+        $thirdCandidates = [];
+
+        // 1️⃣ Clasificados directos y terceros
+        foreach ($standings as $groupTable) {
+
+            for ($i = 0; $i < count($groupTable); $i++) {
+
+                if ($i < $qualifyCount) {
+                    $directQualified[] = $groupTable[$i];
+                }
+
+                if ($i === $qualifyCount) {
+                    $thirdCandidates[] = $groupTable[$i];
+                }
+            }
+        }
+
+        $totalDirect = count($directQualified);
+
+        // 2️⃣ Determinar tamaño ideal (potencia de 2)
+        $idealSize = 1;
+        while ($idealSize < $totalDirect) {
+            $idealSize *= 2;
+        }
+
+        // 3️⃣ Si faltan equipos, agregar mejores terceros
+        if ($idealSize > $totalDirect && count($thirdCandidates) > 0) {
+
+            usort($thirdCandidates, function ($a, $b) {
+                return [
+                    $b['pts'],
+                    $b['dif'],
+                    $b['cf']
+                ] <=> [
+                    $a['pts'],
+                    $a['dif'],
+                    $a['cf']
+                ];
+            });
+
+            $needed = $idealSize - $totalDirect;
+
+            for ($i = 0; $i < $needed && $i < count($thirdCandidates); $i++) {
+                $directQualified[] = $thirdCandidates[$i];
+            }
+        }
+
+        $qualified = $directQualified;
+
+        // 4️⃣ Ordenar globalmente
+        usort($qualified, function ($a, $b) {
+            return [
+                $b['pts'],
+                $b['dif'],
+                $b['cf']
+            ] <=> [
+                $a['pts'],
+                $a['dif'],
+                $a['cf']
+            ];
+        });
+
+        $totalQualified = count($qualified);
+
+        if ($totalQualified < 2) {
+            return false;
+        }
+
+        // 5️⃣ Determinar etapa
+        $stage = match ($totalQualified) {
+            2 => 'final',
+            4 => 'semifinal',
+            8 => 'quarterfinal',
+            16 => 'round_of_16',
+            default => 'knockout'
+        };
+
+        // 6️⃣ Generar cruces 1 vs último, 2 vs penúltimo
+        for ($i = 0; $i < $totalQualified / 2; $i++) {
+
+            $home = $qualified[$i]['team'];
+            $away = $qualified[$totalQualified - 1 - $i]['team'];
+
+            Game::create([
+                'league_id' => $this->league_id,
+                'tournament_id' => $this->id,
+                'group_id' => null,
+                'home_team_id' => $home->id,
+                'away_team_id' => $away->id,
+                'stage' => $stage,
+                'status' => 'scheduled',
+                'game_date' => now()->addDays(1),
+            ]);
+        }
+
+        return true;
+    }
 }

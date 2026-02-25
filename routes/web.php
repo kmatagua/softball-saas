@@ -40,14 +40,17 @@ Route::prefix('admin')->group(function () {
 
     // ===================== TOURNAMENTS =====================
 
-    Route::get('/leagues/{league}/tournaments', [TournamentWebController::class, 'index'])
-        ->name('admin.tournaments.index');
+    Route::get('/leagues/{league}/tournaments', 
+    [TournamentWebController::class, 'index'])
+    ->name('admin.tournaments.index');
 
-    Route::get('/leagues/{league}/tournaments/create', [TournamentWebController::class, 'create'])
-        ->name('admin.tournaments.create');
+    Route::get('/leagues/{league}/tournaments/create', 
+    [TournamentWebController::class, 'create'])
+    ->name('admin.tournaments.create');
 
-    Route::post('/leagues/{league}/tournaments', [TournamentWebController::class, 'store'])
-        ->name('admin.tournaments.store');
+    Route::post('/leagues/{league}/tournaments', 
+    [TournamentWebController::class, 'store'])
+    ->name('admin.tournaments.store');
 
     Route::delete('/leagues/{league}/tournaments/{tournament}',
     [TournamentWebController::class, 'destroy'])
@@ -56,6 +59,14 @@ Route::prefix('admin')->group(function () {
     Route::get('/leagues/{league}/tournaments/{tournament}/standings',
     [TournamentWebController::class, 'standings'])
     ->name('admin.tournaments.standings');
+
+    Route::get('/leagues/{league}/tournaments/{tournament}', 
+    [TournamentWebController::class, 'show']
+    )->name('admin.tournaments.show');
+
+    Route::post('/leagues/{league}/tournaments/{tournament}/generate-playoffs',
+    [TournamentWebController::class, 'generatePlayoffs']
+    )->name('admin.tournaments.generatePlayoffs');
 
 
     // ===================== GROUPS =====================
@@ -167,5 +178,7 @@ Route::prefix('admin')->group(function () {
         '/leagues/{league}/tournaments/{tournament}/games/{game}',
         [GameWebController::class, 'destroy']
     )->name('admin.games.destroy');
+
+
 
 });
