@@ -26,7 +26,7 @@ class Player extends Model
         return $this->hasMany(GameEvent::class);
     }
 
-    // 👇 Helper opcional útil
+    // Helper opcional útil
     public function getFullNameAttribute()
     {
         return $this->first_name . ' ' . $this->last_name;

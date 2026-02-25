@@ -11,8 +11,8 @@ class GameLineup extends Model
         'team_id',
         'player_id',
         'batting_order',
-        'field_position', // 👈 agregado
-        'is_starter', // 👈 agregado
+        'field_position', 
+        'is_starter', 
         'is_active'
     ];
 

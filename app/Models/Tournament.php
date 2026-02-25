@@ -164,19 +164,19 @@ class Tournament extends Model
                     }
                 }
 
-                // 🔴 Eliminado
+                // Eliminado
                 if ($teamsAlreadyAbove >= $qualifyCount) {
 
                     $row['status'] = 'eliminated';
 
                 }
-                // 🟢 Clasificado
+                // Clasificado
                 elseif ($teamsThatCanPass < $qualifyCount) {
 
                     $row['status'] = 'qualified';
 
                 }
-                // 🟡 Aún en pelea
+                // Aún en pelea
                 else {
 
                     $row['status'] = 'neutral';
@@ -197,7 +197,7 @@ class Tournament extends Model
         $directQualified = [];
         $thirdCandidates = [];
 
-        // 1️⃣ Clasificados directos y terceros
+        // Clasificados directos y terceros
         foreach ($standings as $groupTable) {
 
             for ($i = 0; $i < count($groupTable); $i++) {
@@ -214,13 +214,13 @@ class Tournament extends Model
 
         $totalDirect = count($directQualified);
 
-        // 2️⃣ Determinar tamaño ideal (potencia de 2)
+        // Determinar tamaño ideal (potencia de 2)
         $idealSize = 1;
         while ($idealSize < $totalDirect) {
             $idealSize *= 2;
         }
 
-        // 3️⃣ Si faltan equipos, agregar mejores terceros
+        // Si faltan equipos, agregar mejores terceros
         if ($idealSize > $totalDirect && count($thirdCandidates) > 0) {
 
             usort($thirdCandidates, function ($a, $b) {
@@ -244,7 +244,7 @@ class Tournament extends Model
 
         $qualified = $directQualified;
 
-        // 4️⃣ Ordenar globalmente
+        // Ordenar globalmente
         usort($qualified, function ($a, $b) {
             return [
                 $b['pts'],
@@ -263,7 +263,7 @@ class Tournament extends Model
             return false;
         }
 
-        // 5️⃣ Determinar etapa
+        // Determinar etapa
         $stage = match ($totalQualified) {
             2 => 'final',
             4 => 'semifinal',
@@ -272,7 +272,7 @@ class Tournament extends Model
             default => 'knockout'
         };
 
-        // 6️⃣ Generar cruces 1 vs último, 2 vs penúltimo
+        // Generar cruces 1 vs último, 2 vs penúltimo
         for ($i = 0; $i < $totalQualified / 2; $i++) {
 
             $home = $qualified[$i]['team'];

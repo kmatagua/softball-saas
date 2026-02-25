@@ -79,7 +79,7 @@
     <nav class="navbar navbar-expand-lg navbar-dark shadow">
         <div class="container">
             <a class="navbar-brand fw-bold" href="/">
-                🥎 Softball SaaS
+                Softball SaaS
             </a>
         </div>
     </nav>
