@@ -4,18 +4,31 @@ namespace App\Http\Controllers\Web;
 
 use App\Http\Controllers\Controller;
 use App\Models\League;
-use App\Models\Team;
 use App\Models\Player;
+use App\Models\Team;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
-use Intervention\Image\ImageManager;
 use Intervention\Image\Drivers\Gd\Driver;
+use Intervention\Image\ImageManager;
 
 class PlayerWebController extends Controller
 {
+    public function index(League $league)
+    {
+        // Obtener jugadores de todos los equipos de la liga.
+        $teamsIds = $league->teams()->pluck('id');
+        $players = Player::whereIn('team_id', $teamsIds)
+            ->with(['team.tournament'])
+            ->latest()
+            ->paginate(50);
+
+        return view('admin.players.index', compact('league', 'players'));
+    }
     public function create(League $league, Team $team)
     {
-        return view('admin.players.create', compact('league', 'team'));
+        $alreadyCreatedPlayers = $team->players()->latest()->get();
+        
+        return view('admin.players.create', compact('league', 'team', 'alreadyCreatedPlayers'));
     }
 
     public function store(Request $request, League $league, Team $team)
@@ -27,46 +40,46 @@ class PlayerWebController extends Controller
             'jersey_number' => [
                 'nullable',
                 'numeric',
-                'unique:players,jersey_number,NULL,id,team_id,' . $team->id
+                'unique:players,jersey_number,NULL,id,team_id,'.$team->id,
             ],
-            'image' => 'nullable|image|max:10240'
+            'image' => 'nullable|image|max:10240',
         ], [
-            'jersey_number.unique' => 'Ese número de camiseta ya está asignado en este equipo.'
+            'jersey_number.unique' => 'Ese número de camiseta ya está asignado en este equipo.',
         ]);
 
         $data = $request->only([
             'first_name',
             'last_name',
             'dni',
-            'jersey_number'
+            'jersey_number',
         ]);
 
         $data['image'] = null;
 
         if ($request->hasFile('image')) {
 
-            $manager = new ImageManager(new Driver());
+            $manager = new ImageManager(new Driver);
 
             $imageFile = $request->file('image');
 
-            $filename = uniqid() . '.jpg';
+            $filename = uniqid().'.jpg';
 
             $image = $manager->read($imageFile)
                 ->scale(width: 800)
                 ->toJpeg(80);
 
             Storage::disk('public')->put(
-                'players/' . $filename,
+                'players/'.$filename,
                 (string) $image
             );
 
-            $data['image'] = 'players/' . $filename;
+            $data['image'] = 'players/'.$filename;
         }
 
         $team->players()->create($data);
 
         return redirect()
-            ->route('admin.teams.show', [$league, $team])
+            ->route('admin.teams.create', [$league, $team])
             ->with('success', 'Jugador agregado correctamente.');
     }
 
@@ -84,18 +97,18 @@ class PlayerWebController extends Controller
             'jersey_number' => [
                 'nullable',
                 'numeric',
-                'unique:players,jersey_number,' . $player->id . ',id,team_id,' . $team->id
+                'unique:players,jersey_number,'.$player->id.',id,team_id,'.$team->id,
             ],
-            'image' => 'nullable|image|max:10240'
+            'image' => 'nullable|image|max:10240',
         ], [
-            'jersey_number.unique' => 'Ese número de camiseta ya está asignado en este equipo.'
+            'jersey_number.unique' => 'Ese número de camiseta ya está asignado en este equipo.',
         ]);
 
         $data = $request->only([
             'first_name',
             'last_name',
             'dni',
-            'jersey_number'
+            'jersey_number',
         ]);
 
         if ($request->hasFile('image')) {
@@ -104,22 +117,22 @@ class PlayerWebController extends Controller
                 Storage::disk('public')->delete($player->image);
             }
 
-            $manager = new ImageManager(new Driver());
+            $manager = new ImageManager(new Driver);
 
             $imageFile = $request->file('image');
 
-            $filename = uniqid() . '.jpg';
+            $filename = uniqid().'.jpg';
 
             $image = $manager->read($imageFile)
                 ->scale(width: 800)
                 ->toJpeg(80);
 
             Storage::disk('public')->put(
-                'players/' . $filename,
+                'players/'.$filename,
                 (string) $image
             );
 
-            $data['image'] = 'players/' . $filename;
+            $data['image'] = 'players/'.$filename;
         }
 
         $player->update($data);

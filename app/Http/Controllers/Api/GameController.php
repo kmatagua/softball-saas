@@ -26,9 +26,9 @@ class GameController extends Controller
             'homeTeam',
             'awayTeam',
             'events' => function ($query) {
-                $query->orderBy('inning')
-                    ->orderBy('created_at');
-            },
+            $query->orderBy('inning')
+                ->orderBy('created_at');
+        },
             'events.team'
         ])->findOrFail($id);
 
@@ -54,11 +54,23 @@ class GameController extends Controller
                     'id' => $game->awayTeam->id,
                     'name' => $game->awayTeam->name,
                     'score' => $game->away_score
+                ],
+
+                // --- Live State ---
+                'current_inning' => $game->current_inning,
+                'half_inning' => $game->half_inning,
+                'outs' => $game->outs,
+                'balls' => 0, // Por ahora el backend no trackea bolas y strikes completos por picheo
+                'strikes' => 0,
+                'bases' => [
+                    'first' => $game->first_base_player_id,
+                    'second' => $game->second_base_player_id,
+                    'third' => $game->third_base_player_id
                 ]
             ],
 
             'events' => $game->events->map(function ($event) {
-                return [
+            return [
                     'id' => $event->id,
                     'team_id' => $event->team_id,
                     'team_name' => $event->team->name,
@@ -67,7 +79,7 @@ class GameController extends Controller
                     'runs' => $event->runs,
                     'created_at' => $event->created_at
                 ];
-            })
+        })
         ]);
     }
 

@@ -15,10 +15,11 @@ class GameEventController extends Controller
     public function store(Request $request)
     {
         $validated = $request->validate([
-            'game_id'   => 'required|exists:games,id',
-            'team_id'   => 'required|exists:teams,id',
+            'game_id' => 'required|exists:games,id',
+            'team_id' => 'required|exists:teams,id',
             'player_id' => 'required|exists:players,id',
-            'event_type'=> 'required|string|max:50'
+            'pitcher_id' => 'nullable|exists:players,id',
+            'event_type' => 'required|string|max:50'
         ]);
 
         $game = Game::findOrFail($validated['game_id']);
@@ -29,8 +30,8 @@ class GameEventController extends Controller
 
         // Validar turno correcto
         if (
-            ($game->half_inning === 'top' && $validated['team_id'] != $game->away_team_id) ||
-            ($game->half_inning === 'bottom' && $validated['team_id'] != $game->home_team_id)
+        ($game->half_inning === 'top' && $validated['team_id'] != $game->away_team_id) ||
+        ($game->half_inning === 'bottom' && $validated['team_id'] != $game->home_team_id)
         ) {
             return response()->json(['message' => 'No es el turno de ese equipo.'], 422);
         }
@@ -42,21 +43,22 @@ class GameEventController extends Controller
         }
 
         $event = GameEvent::create([
-            'game_id'   => $game->id,
-            'team_id'   => $validated['team_id'],
+            'game_id' => $game->id,
+            'team_id' => $validated['team_id'],
             'player_id' => $player->id,
-            'inning'    => $game->current_inning,
-            'event_type'=> $validated['event_type'],
-            'runs'      => 0
+            'pitcher_id' => $validated['pitcher_id'] ?? null,
+            'inning' => $game->current_inning,
+            'event_type' => $validated['event_type'],
+            'runs' => 0
         ]);
 
-        $this->processEvent($game, $player, $validated['event_type']);
+        $this->processEvent($game, $player, $validated['event_type'], $validated['pitcher_id'] ?? null);
 
         // Walk-off
         if (
-            $game->current_inning >= 7 &&
-            $game->half_inning === 'bottom' &&
-            $game->home_score > $game->away_score
+        $game->current_inning >= 7 &&
+        $game->half_inning === 'bottom' &&
+        $game->home_score > $game->away_score
         ) {
             $game->status = GameStatus::FINISHED;
         }
@@ -71,40 +73,40 @@ class GameEventController extends Controller
                 'away' => $game->away_score
             ],
             'inning' => $game->current_inning,
-            'half'   => $game->half_inning,
-            'outs'   => $game->outs,
-            'bases'  => [
-                'first'  => $game->first_base_player_id,
+            'half' => $game->half_inning,
+            'outs' => $game->outs,
+            'bases' => [
+                'first' => $game->first_base_player_id,
                 'second' => $game->second_base_player_id,
-                'third'  => $game->third_base_player_id
+                'third' => $game->third_base_player_id
             ],
             'status' => $game->status
         ], 201);
     }
 
-    private function processEvent(Game $game, Player $batter, string $type)
+    private function processEvent(Game $game, Player $batter, string $type, ?int $pitcherId = null)
     {
         switch ($type) {
 
             case 'single':
-                $this->advanceRunners($game, $batter, 1);
+                $this->advanceRunners($game, $batter, 1, $pitcherId);
                 break;
 
             case 'double':
-                $this->advanceRunners($game, $batter, 2);
+                $this->advanceRunners($game, $batter, 2, $pitcherId);
                 break;
 
             case 'triple':
-                $this->advanceRunners($game, $batter, 3);
+                $this->advanceRunners($game, $batter, 3, $pitcherId);
                 break;
 
             case 'homerun':
-                $this->advanceRunners($game, $batter, 4);
+                $this->advanceRunners($game, $batter, 4, $pitcherId);
                 break;
 
             case 'walk':
             case 'hbp':
-                $this->handleWalk($game, $batter);
+                $this->handleWalk($game, $batter, $pitcherId);
                 break;
 
             case 'out':
@@ -129,19 +131,20 @@ class GameEventController extends Controller
             // cambiar mitad
             if ($game->half_inning === 'top') {
                 $game->half_inning = 'bottom';
-            } else {
+            }
+            else {
                 $game->half_inning = 'top';
                 $game->current_inning++;
             }
         }
     }
-    private function handleWalk(Game $game, Player $batter)
+    private function handleWalk(Game $game, Player $batter, ?int $pitcherId = null)
     {
         // Si bases llenas, anota carrera forzada
         if (
-            $game->first_base_player_id &&
-            $game->second_base_player_id &&
-            $game->third_base_player_id
+        $game->first_base_player_id &&
+        $game->second_base_player_id &&
+        $game->third_base_player_id
         ) {
 
             $this->scoreRun($game);
@@ -150,6 +153,7 @@ class GameEventController extends Controller
                 'game_id' => $game->id,
                 'team_id' => $batter->team_id,
                 'player_id' => $batter->id,
+                'pitcher_id' => $pitcherId,
                 'inning' => $game->current_inning,
                 'event_type' => 'run_scored',
                 'runs' => 1,
@@ -184,7 +188,7 @@ class GameEventController extends Controller
         }
     }
 
-    private function advanceRunners(Game $game, Player $batter, int $bases)
+    private function advanceRunners(Game $game, Player $batter, int $bases, ?int $pitcherId = null)
     {
         $runners = [
             3 => $game->third_base_player_id,
@@ -202,7 +206,8 @@ class GameEventController extends Controller
 
         foreach ($runners as $base => $runnerId) {
 
-            if (!$runnerId) continue;
+            if (!$runnerId)
+                continue;
 
             $newPosition = $base + $bases;
 
@@ -216,6 +221,7 @@ class GameEventController extends Controller
                     'game_id' => $game->id,
                     'team_id' => $batter->team_id,
                     'player_id' => $batter->id,
+                    'pitcher_id' => $pitcherId,
                     'inning' => $game->current_inning,
                     'event_type' => 'run_scored',
                     'runs' => 1,
@@ -223,7 +229,8 @@ class GameEventController extends Controller
                     'scored_player_id' => $runnerId
                 ]);
 
-            } else {
+            }
+            else {
                 $newBases[$newPosition] = $runnerId;
             }
         }
@@ -238,6 +245,7 @@ class GameEventController extends Controller
                 'game_id' => $game->id,
                 'team_id' => $batter->team_id,
                 'player_id' => $batter->id,
+                'pitcher_id' => $pitcherId,
                 'inning' => $game->current_inning,
                 'event_type' => 'run_scored',
                 'runs' => 1,
@@ -245,7 +253,8 @@ class GameEventController extends Controller
                 'scored_player_id' => $batter->id
             ]);
 
-        } else {
+        }
+        else {
             $newBases[$bases] = $batter->id;
         }
 
@@ -264,7 +273,8 @@ class GameEventController extends Controller
     {
         if ($game->half_inning === 'top') {
             $game->away_score++;
-        } else {
+        }
+        else {
             $game->home_score++;
         }
     }

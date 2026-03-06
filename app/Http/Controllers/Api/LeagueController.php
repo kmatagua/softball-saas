@@ -8,6 +8,7 @@ use App\Models\League;
 use App\Models\User;
 use App\Models\Player;
 use App\Models\GameEvent;
+use App\Enums\GameStatus;
 use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Hash;
 
@@ -80,8 +81,8 @@ class LeagueController extends Controller
 
             $events = GameEvent::where('player_id', $player->id)
                 ->whereHas('game', function ($query) {
-                    $query->where('status', 'finished');
-                })
+                $query->where('status', GameStatus::FINISHED);
+            })
                 ->get();
 
             $singles = $events->where('event_type', 'single')->count();

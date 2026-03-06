@@ -11,10 +11,25 @@ use Illuminate\Support\Facades\Storage;
 
 class TeamWebController extends Controller
 {
+    public function index(League $league)
+    {
+        $teams = $league->teams()->with(['tournament', 'group'])->latest()->get();
+        return view('admin.teams.index', compact('league', 'teams'));
+    }
+
     public function create(League $league, Tournament $tournament)
     {
         $groups = $tournament->groups;
-        return view('admin.teams.create', compact('league', 'tournament', 'groups'));
+        $selectedGroupId = request('group');
+
+        $alreadyCreatedTeams = collect();
+        if ($selectedGroupId) {
+            $alreadyCreatedTeams = Team::where('group_id', $selectedGroupId)
+                ->orderBy('created_at', 'desc')
+                ->get();
+        }
+
+        return view('admin.teams.create', compact('league', 'tournament', 'groups', 'alreadyCreatedTeams', 'selectedGroupId'));
     }
 
     public function store(Request $request, League $league, Tournament $tournament)
@@ -45,8 +60,8 @@ class TeamWebController extends Controller
         ]);
 
         return redirect()
-            ->route('admin.leagues.show', $league)
-            ->with('success', 'Equipo creado.');
+            ->route('admin.teams.create', ['league' => $league, 'tournament' => $tournament, 'group' => $request->group_id])
+            ->with('success', 'Equipo creado exitosamente. Puedes registrar otro si lo deseas.');
     }
 
     public function edit(League $league, Team $team)
@@ -104,8 +119,8 @@ class TeamWebController extends Controller
     {
         $team->load([
             'players' => function ($query) {
-                $query->orderBy('jersey_number');
-            }
+            $query->orderBy('jersey_number');
+        }
         ]);
 
         return view('admin.teams.show', compact('league', 'team'));

@@ -52,6 +52,29 @@ class TournamentWebController extends Controller
             ->with('success', 'Torneo creado correctamente.');
     }
 
+    public function edit(League $league, Tournament $tournament)
+    {
+        return view('admin.tournaments.edit', compact('league', 'tournament'));
+    }
+
+    public function update(Request $request, League $league, Tournament $tournament)
+    {
+        $request->validate([
+            'name' => 'required|string|max:255',
+            'qualifies_per_group' => 'required|integer|min:1',
+        ]);
+
+        $tournament->update([
+            'name' => $request->name,
+            'qualifies_per_group' => $request->qualifies_per_group,
+            'is_active' => $request->has('is_active')
+        ]);
+
+        return redirect()
+            ->route('admin.tournaments.index', $league)
+            ->with('success', 'Torneo actualizado correctamente.');
+    }
+
     public function destroy(League $league, Tournament $tournament)
     {
         $tournament->delete();

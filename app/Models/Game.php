@@ -33,7 +33,8 @@ class Game extends Model
     ];
 
     protected $casts = [
-        'stage' => GameStage::class,
+        'stage' => GameStage::class ,
+        'status' => GameStatus::class ,
     ];
 
     public function league()
@@ -48,12 +49,12 @@ class Game extends Model
 
     public function homeTeam()
     {
-        return $this->belongsTo(Team::class, 'home_team_id');
+        return $this->belongsTo(Team::class , 'home_team_id');
     }
 
     public function awayTeam()
     {
-        return $this->belongsTo(Team::class, 'away_team_id');
+        return $this->belongsTo(Team::class , 'away_team_id');
     }
 
     public function group()

@@ -8,6 +8,32 @@ use App\Models\GameEvent;
 
 class PlayerController extends Controller
 {
+    public function stats($id)
+    {
+        $player = Player::findOrFail($id);
+        $events = GameEvent::where('player_id', $player->id)->get();
+
+        $hits = $events->whereIn('event_type', ['single', 'double', 'triple', 'homerun'])->count();
+        $ab = $hits + $events->where('event_type', 'out')->count();
+        $runs = GameEvent::where('scored_player_id', $player->id)->count();
+        $rbi = $events->sum('rbi');
+        $avg = $ab > 0 ? round($hits / $ab, 3) : 0;
+
+        return response()->json([
+            'player' => [
+                'id' => $player->id,
+                'name' => $player->first_name . ' ' . $player->last_name
+            ],
+            'stats' => [
+                'AB' => $ab,
+                'H' => $hits,
+                'R' => $runs,
+                'RBI' => $rbi,
+                'AVG' => $avg,
+            ]
+        ]);
+    }
+
     public function advancedStats($id)
     {
         $player = Player::findOrFail($id);

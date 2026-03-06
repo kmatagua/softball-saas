@@ -12,10 +12,10 @@ use App\Models\Tournament;
 class GameWebController extends Controller
 {
     /*
-    |--------------------------------------------------------------------------
-    | ======================= PÚBLICO =======================
-    |--------------------------------------------------------------------------
-    */
+     |--------------------------------------------------------------------------
+     | ======================= PÚBLICO =======================
+     |--------------------------------------------------------------------------
+     */
 
     public function show($slug, $id)
     {
@@ -81,10 +81,20 @@ class GameWebController extends Controller
     }
 
     /*
-    |--------------------------------------------------------------------------
-    | ======================= ADMIN =======================
-    |--------------------------------------------------------------------------
-    */
+     |--------------------------------------------------------------------------
+     | ======================= ADMIN =======================
+     |--------------------------------------------------------------------------
+     */
+
+    public function leagueIndex(League $league)
+    {
+        $games = Game::where('league_id', $league->id)
+            ->with(['homeTeam', 'awayTeam', 'tournament'])
+            ->latest()
+            ->get();
+
+        return view('admin.games.league_index', compact('league', 'games'));
+    }
 
     public function adminIndex(League $league, Tournament $tournament)
     {
@@ -133,8 +143,8 @@ class GameWebController extends Controller
 
         // Validar que ambos equipos pertenezcan al torneo
         if (
-            $homeTeam->tournament_id !== $tournament->id ||
-            $awayTeam->tournament_id !== $tournament->id
+        $homeTeam->tournament_id !== $tournament->id ||
+        $awayTeam->tournament_id !== $tournament->id
         ) {
             return back()
                 ->withErrors('Los equipos no pertenecen a este torneo.')
@@ -152,14 +162,14 @@ class GameWebController extends Controller
         }
 
         $tournament->games()->create([
-            'league_id'     => $league->id,
+            'league_id' => $league->id,
             'tournament_id' => $tournament->id,
-            'group_id'      => $request->group_id,
-            'home_team_id'  => $request->home_team_id,
-            'away_team_id'  => $request->away_team_id,
-            'stage'         => $request->stage,
-            'game_date'     => $request->game_date,
-            'status'        => 'scheduled'
+            'group_id' => $request->group_id,
+            'home_team_id' => $request->home_team_id,
+            'away_team_id' => $request->away_team_id,
+            'stage' => $request->stage,
+            'game_date' => $request->game_date,
+            'status' => 'scheduled'
         ]);
 
         return redirect()
@@ -205,5 +215,12 @@ class GameWebController extends Controller
         return redirect()
             ->route('admin.games.index', [$league, $tournament])
             ->with('success', 'Juego eliminado.');
+    }
+
+    public function scorekeeper(League $league, Tournament $tournament, Game $game)
+    {
+        // El juego debe cargar primero toda su asociación de equipos
+        $game->load(['homeTeam', 'awayTeam']);
+        return view('admin.scorekeeper.index', compact('league', 'tournament', 'game'));
     }
 }
