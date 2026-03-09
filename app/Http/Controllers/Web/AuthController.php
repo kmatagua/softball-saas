@@ -22,6 +22,14 @@ class AuthController extends Controller
 
         if (Auth::attempt($credentials)) {
             $request->session()->regenerate();
+
+            $user = Auth::user();
+
+            // Check if user is exclusively a Scorekeeper
+            if ($user->hasRole('Scorekeeper') && !$user->hasRole('SuperAdmin') && !$user->hasRole('LeagueAdmin')) {
+                return redirect()->intended('admin/scorekeeper/dashboard');
+            }
+
             return redirect()->intended('admin/leagues');
         }
 

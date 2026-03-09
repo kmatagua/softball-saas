@@ -42,16 +42,32 @@
 @endsection
 
 @push('scripts')
-    <!-- Módulos de Vue vía CDN -->
+    <!-- Módulos de Vue y Axios vía CDN -->
     <script type="importmap">
       {
         "imports": {
-          "vue": "https://unpkg.com/vue@3/dist/vue.esm-browser.js"
+          "vue": "https://unpkg.com/vue@3/dist/vue.esm-browser.js",
+          "axios": "https://cdn.jsdelivr.net/npm/axios@1.6.7/+esm"
         }
       }
     </script>
 
     <script type="module">
+        import axios from 'axios';
+        window.axios = axios;
+
+        // Start Axios Config
+        axios.defaults.headers.common['X-Requested-With'] = 'XMLHttpRequest';
+        let token = document.head.querySelector('meta[name="csrf-token"]');
+        if (token) {
+            window.axios.defaults.headers.common['X-CSRF-TOKEN'] = token.content;
+        } else {
+            // Let's add it if it is missing
+            window.axios.defaults.headers.common['X-CSRF-TOKEN'] = '{{ csrf_token() }}';
+        }
+        window.axios.defaults.withCredentials = true;
+        // End Axios Config
+
         import { mountScorekeeper } from '{{ asset('js/scorekeeper/app.js') }}';
 
         // Rutas y configuración inicial que Laravel le pasa a Vue
@@ -59,7 +75,7 @@
             gameId: {{ $game->id }},
             leagueId: {{ $league->id }},
             tournamentId: {{ $tournament->id }},
-            fetchGameDetailsUrl: '{{ route('api.games.show', [$league, $tournament, $game]) }}',
+            fetchGameDetailsUrl: '{{ route('api.games.show', ['id' => $game->id]) }}',
             postEventUrl: '/api/game-events'
         };
 

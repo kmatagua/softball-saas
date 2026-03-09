@@ -70,6 +70,18 @@
                 </div>
             </div>
 
+            <!-- Datos del Encuentro -->
+            <div class="pt-6 border-t border-dark-border grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                    <label class="block text-sm font-medium text-white mb-2">Fecha y Hora (Opcional)</label>
+                    <input type="datetime-local" name="game_date" value="{{ old('game_date', $game->game_date ? \Carbon\Carbon::parse($game->game_date)->format('Y-m-d\TH:i') : '') }}" class="block w-full rounded-lg border-0 py-2.5 px-3 bg-dark-bg text-white ring-1 ring-inset ring-dark-border focus:ring-2 focus:ring-inset focus:ring-brand-500 sm:text-sm sm:leading-6">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-white mb-2">Locación / Estadio (Opcional)</label>
+                    <input type="text" name="location" value="{{ old('location', $game->location) }}" class="block w-full rounded-lg border-0 py-2.5 px-3 bg-dark-bg text-white ring-1 ring-inset ring-dark-border focus:ring-2 focus:ring-inset focus:ring-brand-500 sm:text-sm sm:leading-6" placeholder="Ej: Estadio Central">
+                </div>
+            </div>
+
             <!-- Status -->
             <div class="pt-6 border-t border-dark-border">
                 <label class="block text-sm font-medium text-white mb-3">Estado del Partido</label>

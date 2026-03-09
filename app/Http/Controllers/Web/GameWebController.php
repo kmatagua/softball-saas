@@ -135,7 +135,8 @@ class GameWebController extends Controller
             'home_team_id' => 'required|exists:teams,id|different:away_team_id',
             'away_team_id' => 'required|exists:teams,id',
             'stage' => 'required',
-            'game_date' => 'nullable|date'
+            'game_date' => 'nullable|date',
+            'location' => 'nullable|string|max:255'
         ]);
 
         $homeTeam = Team::findOrFail($request->home_team_id);
@@ -169,6 +170,7 @@ class GameWebController extends Controller
             'away_team_id' => $request->away_team_id,
             'stage' => $request->stage,
             'game_date' => $request->game_date,
+            'location' => $request->location,
             'status' => 'scheduled'
         ]);
 
@@ -194,13 +196,17 @@ class GameWebController extends Controller
         $request->validate([
             'home_score' => 'nullable|integer|min:0',
             'away_score' => 'nullable|integer|min:0',
-            'status' => 'required'
+            'status' => 'required',
+            'game_date' => 'nullable|date',
+            'location' => 'nullable|string|max:255'
         ]);
 
         $game->update([
             'home_score' => $request->home_score,
             'away_score' => $request->away_score,
-            'status' => $request->status
+            'status' => $request->status,
+            'game_date' => $request->game_date,
+            'location' => $request->location
         ]);
 
         return redirect()

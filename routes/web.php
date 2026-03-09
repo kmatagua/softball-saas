@@ -8,6 +8,7 @@ use App\Http\Controllers\Web\PlayerWebController;
 use App\Http\Controllers\Web\GameWebController;
 use App\Http\Controllers\Web\TournamentWebController;
 use App\Http\Controllers\Web\AuthController;
+use App\Http\Controllers\Web\ScorekeeperDashboardController;
 
 Route::get('/', function () {
     return redirect()->route('public.home');
@@ -220,11 +221,13 @@ Route::prefix('admin')->middleware(['auth'])->group(function () {
     // ==============================
     // SCOREKEEPER CONSOLE (VUE APP)
     // ==============================
+
+    Route::get('/scorekeeper/dashboard', [ScorekeeperDashboardController::class , 'index'])
+        ->name('admin.scorekeeper.dashboard');
+
     Route::get(
         '/leagues/{league}/tournaments/{tournament}/games/{game}/scorekeeper',
     [GameWebController::class , 'scorekeeper']
     )->name('admin.scorekeeper.index');
-
-
 
 });

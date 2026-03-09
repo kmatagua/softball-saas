@@ -9,9 +9,16 @@ use App\Models\GameEvent;
 use App\Models\Player;
 use App\Enums\GameStatus;
 use App\Events\GameEventCreated;
+use App\Actions\RecalculateGameState;
 
 class GameEventController extends Controller
 {
+    protected RecalculateGameState $recalculator;
+
+    public function __construct(RecalculateGameState $recalculator)
+    {
+        $this->recalculator = $recalculator;
+    }
     public function store(Request $request)
     {
         $validated = $request->validate([
@@ -52,18 +59,9 @@ class GameEventController extends Controller
             'runs' => 0
         ]);
 
-        $this->processEvent($game, $player, $validated['event_type'], $validated['pitcher_id'] ?? null);
+        $this->recalculator->execute($game);
 
-        // Walk-off
-        if (
-        $game->current_inning >= 7 &&
-        $game->half_inning === 'bottom' &&
-        $game->home_score > $game->away_score
-        ) {
-            $game->status = GameStatus::FINISHED;
-        }
-
-        $game->save();
+        $game->refresh();
 
         broadcast(new GameEventCreated($event));
 
@@ -80,202 +78,53 @@ class GameEventController extends Controller
                 'second' => $game->second_base_player_id,
                 'third' => $game->third_base_player_id
             ],
-            'status' => $game->status
+            'status' => $game->status,
+            'event' => $event->load('player', 'pitcher')
         ], 201);
     }
 
-    private function processEvent(Game $game, Player $batter, string $type, ?int $pitcherId = null)
+    public function update(Request $request, GameEvent $gameEvent)
     {
-        switch ($type) {
+        $validated = $request->validate([
+            'event_type' => 'required|string|max:50'
+        ]);
 
-            case 'single':
-                $this->advanceRunners($game, $batter, 1, $pitcherId);
-                break;
+        $game = Game::findOrFail($gameEvent->game_id);
 
-            case 'double':
-                $this->advanceRunners($game, $batter, 2, $pitcherId);
-                break;
-
-            case 'triple':
-                $this->advanceRunners($game, $batter, 3, $pitcherId);
-                break;
-
-            case 'homerun':
-                $this->advanceRunners($game, $batter, 4, $pitcherId);
-                break;
-
-            case 'walk':
-            case 'hbp':
-                $this->handleWalk($game, $batter, $pitcherId);
-                break;
-
-            case 'out':
-                $this->handleOut($game);
-                break;
+        if ($game->status !== GameStatus::LIVE) {
+            return response()->json(['message' => 'Juego no está en vivo.'], 422);
         }
+
+        $gameEvent->update([
+            'event_type' => $validated['event_type']
+        ]);
+
+        $this->recalculator->execute($game);
+        $game->refresh();
+
+        return response()->json([
+            'message' => 'Evento actualizado',
+            'game' => $game,
+            'event' => $gameEvent
+        ]);
     }
 
-    private function handleOut(Game $game)
+    public function destroy(GameEvent $gameEvent)
     {
-        $game->outs++;
+        $game = Game::findOrFail($gameEvent->game_id);
 
-        if ($game->outs >= 3) {
-
-            $game->outs = 0;
-
-            // limpiar bases
-            $game->first_base_player_id = null;
-            $game->second_base_player_id = null;
-            $game->third_base_player_id = null;
-
-            // cambiar mitad
-            if ($game->half_inning === 'top') {
-                $game->half_inning = 'bottom';
-            }
-            else {
-                $game->half_inning = 'top';
-                $game->current_inning++;
-            }
-        }
-    }
-    private function handleWalk(Game $game, Player $batter, ?int $pitcherId = null)
-    {
-        // Si bases llenas, anota carrera forzada
-        if (
-        $game->first_base_player_id &&
-        $game->second_base_player_id &&
-        $game->third_base_player_id
-        ) {
-
-            $this->scoreRun($game);
-
-            GameEvent::create([
-                'game_id' => $game->id,
-                'team_id' => $batter->team_id,
-                'player_id' => $batter->id,
-                'pitcher_id' => $pitcherId,
-                'inning' => $game->current_inning,
-                'event_type' => 'run_scored',
-                'runs' => 1,
-                'rbi' => 0,
-                'scored_player_id' => $game->third_base_player_id
-            ]);
-
-            $game->third_base_player_id = $game->second_base_player_id;
-            $game->second_base_player_id = $game->first_base_player_id;
-            $game->first_base_player_id = $batter->id;
-
-            return;
+        if ($game->status !== GameStatus::LIVE) {
+            return response()->json(['message' => 'Juego no está en vivo.'], 422);
         }
 
-        // Avance simple forzado
-        if (!$game->first_base_player_id) {
-            $game->first_base_player_id = $batter->id;
-            return;
-        }
+        $gameEvent->delete();
 
-        if (!$game->second_base_player_id) {
-            $game->second_base_player_id = $game->first_base_player_id;
-            $game->first_base_player_id = $batter->id;
-            return;
-        }
+        $this->recalculator->execute($game);
+        $game->refresh();
 
-        if (!$game->third_base_player_id) {
-            $game->third_base_player_id = $game->second_base_player_id;
-            $game->second_base_player_id = $game->first_base_player_id;
-            $game->first_base_player_id = $batter->id;
-            return;
-        }
-    }
-
-    private function advanceRunners(Game $game, Player $batter, int $bases, ?int $pitcherId = null)
-    {
-        $runners = [
-            3 => $game->third_base_player_id,
-            2 => $game->second_base_player_id,
-            1 => $game->first_base_player_id
-        ];
-
-        $newBases = [
-            1 => null,
-            2 => null,
-            3 => null
-        ];
-
-        $rbiCount = 0;
-
-        foreach ($runners as $base => $runnerId) {
-
-            if (!$runnerId)
-                continue;
-
-            $newPosition = $base + $bases;
-
-            if ($newPosition >= 4) {
-
-                $this->scoreRun($game);
-                $rbiCount++;
-
-                // Registrar quién anotó
-                GameEvent::create([
-                    'game_id' => $game->id,
-                    'team_id' => $batter->team_id,
-                    'player_id' => $batter->id,
-                    'pitcher_id' => $pitcherId,
-                    'inning' => $game->current_inning,
-                    'event_type' => 'run_scored',
-                    'runs' => 1,
-                    'rbi' => 0,
-                    'scored_player_id' => $runnerId
-                ]);
-
-            }
-            else {
-                $newBases[$newPosition] = $runnerId;
-            }
-        }
-
-        // Bateador
-        if ($bases >= 4) {
-
-            $this->scoreRun($game);
-            $rbiCount++;
-
-            GameEvent::create([
-                'game_id' => $game->id,
-                'team_id' => $batter->team_id,
-                'player_id' => $batter->id,
-                'pitcher_id' => $pitcherId,
-                'inning' => $game->current_inning,
-                'event_type' => 'run_scored',
-                'runs' => 1,
-                'rbi' => 0,
-                'scored_player_id' => $batter->id
-            ]);
-
-        }
-        else {
-            $newBases[$bases] = $batter->id;
-        }
-
-        // Actualizar RBI del evento principal
-        GameEvent::where('game_id', $game->id)
-            ->latest()
-            ->first()
-            ->update(['rbi' => $rbiCount]);
-
-        $game->first_base_player_id = $newBases[1];
-        $game->second_base_player_id = $newBases[2];
-        $game->third_base_player_id = $newBases[3];
-    }
-
-    private function scoreRun(Game $game)
-    {
-        if ($game->half_inning === 'top') {
-            $game->away_score++;
-        }
-        else {
-            $game->home_score++;
-        }
+        return response()->json([
+            'message' => 'Evento eliminado',
+            'game' => $game
+        ]);
     }
 }

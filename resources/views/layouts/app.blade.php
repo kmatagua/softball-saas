@@ -31,6 +31,7 @@
             }
         }
     </script>
+    @stack('styles')
 </head>
 
 <body class="bg-dark-bg text-slate-200 antialiased font-sans min-h-screen flex flex-col md:flex-row">
@@ -139,5 +140,6 @@
         </div>
     </main>
 
+    @stack('scripts')
 </body>
 </html>

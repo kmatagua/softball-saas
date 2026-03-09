@@ -1,5 +1,3 @@
-import { ref } from 'https://unpkg.com/vue@3/dist/vue.esm-browser.js';
-
 export default {
     name: 'ScoreboardHeader',
     props: {

@@ -83,8 +83,13 @@
                     
                     <div>
                         <label class="block text-sm font-medium text-white mb-2">Fecha y Hora (Opcional)</label>
-                        <input type="date" name="game_date" class="block w-full rounded-lg border-0 py-2.5 px-3 bg-dark-bg text-white ring-1 ring-inset ring-dark-border focus:ring-2 focus:ring-inset focus:ring-brand-500 sm:text-sm sm:leading-6">
+                        <input type="datetime-local" name="game_date" class="block w-full rounded-lg border-0 py-2.5 px-3 bg-dark-bg text-white ring-1 ring-inset ring-dark-border focus:ring-2 focus:ring-inset focus:ring-brand-500 sm:text-sm sm:leading-6">
                     </div>
+                </div>
+
+                <div class="mt-6">
+                    <label class="block text-sm font-medium text-white mb-2">Locación / Estadio (Opcional)</label>
+                    <input type="text" name="location" class="block w-full rounded-lg border-0 py-2.5 px-3 bg-dark-bg text-white ring-1 ring-inset ring-dark-border focus:ring-2 focus:ring-inset focus:ring-brand-500 sm:text-sm sm:leading-6" placeholder="Ej: Estadio Central">
                 </div>
 
                 @if($selectedGroupId)

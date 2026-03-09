@@ -29,7 +29,8 @@ class GameController extends Controller
             $query->orderBy('inning')
                 ->orderBy('created_at');
         },
-            'events.team'
+            'events.team',
+            'lineups.player'
         ])->findOrFail($id);
 
         return response()->json([
@@ -78,6 +79,18 @@ class GameController extends Controller
                     'event_type' => $event->event_type,
                     'runs' => $event->runs,
                     'created_at' => $event->created_at
+                ];
+        }),
+
+            'lineups' => $game->lineups->map(function ($lineup) {
+            return [
+                    'id' => $lineup->id,
+                    'team_id' => $lineup->team_id,
+                    'player_id' => $lineup->player_id,
+                    'player_name' => $lineup->player->first_name . ' ' . $lineup->player->last_name,
+                    'batting_order' => $lineup->batting_order,
+                    'field_position' => $lineup->field_position,
+                    'is_starter' => $lineup->is_starter
                 ];
         })
         ]);

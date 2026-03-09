@@ -19,11 +19,12 @@ class DatabaseSeeder extends Seeder
         //     'email' => 'test@example.com',
         // ]);
         $this->call([
-            RolesSeeder::class,
-            SuperAdminSeeder::class,
-            DemoLeagueSeeder::class,
-            DemoLeagueSeederEarly::class,
-            DemoLeagueSeederMid::class,
+            RolesSeeder::class ,
+            SuperAdminSeeder::class ,
+            DemoLeagueSeeder::class ,
+            DemoLeagueSeederEarly::class ,
+            DemoLeagueSeederMid::class ,
+            ScorekeeperSeeder::class ,
         ]);
     }
 }
