@@ -6,6 +6,8 @@ import ActionPanel from './ActionPanel.js';
 import PlayByPlayList from './PlayByPlayList.js';
 import LineupPanel from './LineupPanel.js';
 
+axios.defaults.withCredentials = true;
+
 export default {
     name: 'ScorekeeperApp',
     components: {
@@ -24,8 +26,11 @@ export default {
         const lineups = ref([]);
         const balls = ref(0);
         const strikes = ref(0);
+        const currentPitcherId = ref(null);
         const loading = ref(true);
         const error = ref(null);
+        const homeRoster = ref([]);
+        const awayRoster = ref([]);
 
         const fetchGameDetails = async () => {
             try {
@@ -34,6 +39,10 @@ export default {
                 game.value = response.data.game;
                 events.value = response.data.events;
                 lineups.value = response.data.lineups || [];
+                
+                if (game.value && homeRoster.value.length === 0) {
+                    fetchRosters();
+                }
             } catch (err) {
                 console.error('Error fetching game details:', err);
                 error.value = 'Failed to load game details. Please try again later.';
@@ -42,15 +51,26 @@ export default {
             }
         };
 
+        const fetchRosters = async () => {
+            try {
+                const [homeRes, awayRes] = await Promise.all([
+                    axios.get(`/api/teams/${game.value.home_team.id}/players`),
+                    axios.get(`/api/teams/${game.value.away_team.id}/players`)
+                ]);
+                homeRoster.value = homeRes.data;
+                awayRoster.value = awayRes.data;
+            } catch (err) {
+                console.error('Error fetching rosters:', err);
+            }
+        };
+
         const handleRecordEvent = async (eventType) => {
             try {
                 const currentTeamId = game.value.half_inning === 'top' ? game.value.away_team.id : game.value.home_team.id;
-
-                // Determinar el bateador actual. Si el backend no lo tiene, tomamos el primero del lineup por ahora.
                 let currentPlayerId = game.value.half_inning === 'top' ? game.value.current_batter_away : game.value.current_batter_home;
 
                 if (!currentPlayerId) {
-                    const teamLineup = lineups.value.filter(l => l.team_id === currentTeamId);
+                    const teamLineup = lineups.value.filter(l => l.team_id === currentTeamId && l.batting_order !== null);
                     if (teamLineup.length > 0) {
                         currentPlayerId = teamLineup[0].player_id;
                     }
@@ -61,31 +81,33 @@ export default {
                     return;
                 }
 
+                const opposingTeamId = game.value.half_inning === 'top' ? game.value.home_team.id : game.value.away_team.id;
+                let pitcherId = currentPitcherId.value;
+                if (!pitcherId) {
+                    const pitcherLineup = lineups.value.find(l => l.team_id === opposingTeamId && l.field_position === 'P');
+                    if (pitcherLineup) {
+                        pitcherId = pitcherLineup.player_id;
+                    }
+                }
+
                 const response = await axios.post(props.endpoints.postEventUrl, {
                     game_id: props.endpoints.gameId,
                     team_id: currentTeamId,
                     player_id: currentPlayerId,
                     event_type: eventType,
-                    pitcher_id: null // Por ahora
+                    pitcher_id: pitcherId
                 });
 
-                // Agregamos el evento devuelto al inicio de la lista
                 events.value.unshift(response.data.event);
 
-                // Actualizamos marcadores y contadores a partir de la respuesta calculada
-                if (response.data.event) {
+                if (response.data.score) {
                     game.value.home_score = response.data.score.home;
                     game.value.away_score = response.data.score.away;
                     game.value.outs = response.data.outs;
                     game.value.current_inning = response.data.inning;
                     game.value.half_inning = response.data.half;
+                    game.value.bases = response.data.bases;
 
-                    // Actualizar bases
-                    game.value.first_base_player_id = response.data.bases.first;
-                    game.value.second_base_player_id = response.data.bases.second;
-                    game.value.third_base_player_id = response.data.bases.third;
-
-                    // Si hubo un hit o un out de jugada, o el bat terminó, reiniciamos el conteo
                     const resetTypes = ['single', 'double', 'triple', 'homerun', 'out', 'strikeout', 'walk', 'hbp', 'double_play'];
                     if (resetTypes.includes(eventType)) {
                         balls.value = 0;
@@ -96,13 +118,8 @@ export default {
                         balls.value++;
                     }
                 }
-
-                // No es necesario recargar todo si ya actualizamos el estado, pero por seguridad si quieres:
-                // await fetchGameDetails();
             } catch (e) {
                 console.error('Error recording event:', e);
-                // Si es un error de validación, mostrar el mensaje. Pero si ya se guardó (como dijo el subagent), tal vez no alertar?
-                // Mejor alertamos solo si el status no es 201
                 if (e.response?.status !== 201) {
                     alert('No se pudo procesar la jugada. ' + (e.response?.data?.message || ''));
                 }
@@ -121,20 +138,71 @@ export default {
             }
         };
 
+        const handleUpdateReserve = async (teamId, playerId, action) => {
+            try {
+                await axios.post('/api/game-lineups/update-reserve', {
+                    game_id: game.value.id,
+                    team_id: teamId,
+                    player_id: playerId,
+                    action: action
+                });
+                await fetchGameDetails();
+            } catch (e) {
+                alert(e.response?.data?.message || 'Error al actualizar reserva');
+            }
+        };
+
+        const handleSubstitute = async (teamId, outgoingId, incomingId, position) => {
+            try {
+                await axios.post('/api/game-lineups/substitute', {
+                    game_id: game.value.id,
+                    team_id: teamId,
+                    outgoing_player_id: outgoingId,
+                    incoming_player_id: incomingId,
+                    field_position: position
+                });
+                await fetchGameDetails();
+            } catch (e) {
+                alert(e.response?.data?.message || 'Error en la sustitución');
+            }
+        };
+
+        const handleSaveLineups = async (lineupData) => {
+            try {
+                loading.value = true;
+                await axios.post('/api/save-lineups', {
+                    game_id: game.value.id,
+                    ...lineupData
+                });
+                await fetchGameDetails();
+                alert('Lineups guardados correctamente.');
+            } catch (e) {
+                alert(e.response?.data?.message || 'Error al guardar lineups');
+            } finally {
+                loading.value = false;
+            }
+        };
+
+        const handleStartGame = async () => {
+            try {
+                loading.value = true;
+                await axios.post(`/api/games/${game.value.id}/start`);
+                await fetchGameDetails();
+            } catch (e) {
+                alert(e.response?.data?.message || 'No se pudo iniciar el juego.');
+            } finally {
+                loading.value = false;
+            }
+        };
+
         onMounted(() => {
             fetchGameDetails();
         });
 
         return {
-            loading,
-            error,
-            game,
-            events,
-            lineups,
-            balls,
-            strikes,
-            handleRecordEvent,
-            deleteEvent
+            loading, error, game, events, lineups, balls, strikes,
+            handleRecordEvent, deleteEvent, handleUpdateReserve, handleSubstitute,
+            handleSaveLineups, handleStartGame, homeRoster, awayRoster
         };
     },
     template: `
@@ -155,16 +223,13 @@ export default {
             </div>
 
             <div v-if="!loading && !error && game" class="grid grid-cols-1 lg:grid-cols-12 gap-6">
-                <!-- Parte izquierda: Marcador, Diamante y Play-By-Play -->
                 <div class="lg:col-span-8 flex flex-col gap-6">
                     <ScoreboardHeader :game="game" :gameState="{ inning_half: game.half_inning, current_inning: game.current_inning, outs: game.outs, balls, strikes }" />
-                    
                     <div class="bg-dark-card rounded-xl border border-dark-border p-6 shadow-sm">
-                        <BaseballDiamond :gameState="{ bases: { first: game.first_base_player_id, second: game.second_base_player_id, third: game.third_base_player_id } }" />
+                        <BaseballDiamond :gameState="{ bases: game.bases }" />
                     </div>
                 </div>
 
-                <!-- Parte derecha: Panel de Acciones -->
                 <div class="lg:col-span-4 flex flex-col gap-6">
                     <div class="bg-dark-card rounded-xl border border-dark-border p-6 shadow-sm relative overflow-hidden">
                         <div class="absolute top-0 right-0 p-4">
@@ -174,14 +239,16 @@ export default {
                             </span>
                         </div>
                         <h2 class="text-xl font-bold mb-4">Panel de Anotador</h2>
-                        
-                        <ActionPanel @record-event="handleRecordEvent" />
+                        <ActionPanel :gameStatus="game.status" @record-event="handleRecordEvent" @start-game="handleStartGame" />
                     </div>
-                    <!-- Play by Play -->
                     <PlayByPlayList :events="events" @delete-event="deleteEvent" />
-
-                    <!-- Lineups -->
-                    <LineupPanel :game="game" :lineups="lineups" />
+                    <LineupPanel 
+                        :game="game" :lineups="lineups"
+                        :homeRoster="homeRoster" :awayRoster="awayRoster"
+                        @update-reserve="handleUpdateReserve"
+                        @substitute="handleSubstitute"
+                        @save-lineups="handleSaveLineups"
+                    />
                 </div>
             </div>
         </div>

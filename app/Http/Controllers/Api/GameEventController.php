@@ -73,11 +73,7 @@ class GameEventController extends Controller
             'inning' => $game->current_inning,
             'half' => $game->half_inning,
             'outs' => $game->outs,
-            'bases' => [
-                'first' => $game->first_base_player_id,
-                'second' => $game->second_base_player_id,
-                'third' => $game->third_base_player_id
-            ],
+            'bases' => $this->getDetailedBases($game),
             'status' => $game->status,
             'event' => $event->load('player', 'pitcher')
         ], 201);
@@ -126,5 +122,31 @@ class GameEventController extends Controller
             'message' => 'Evento eliminado',
             'game' => $game
         ]);
+    }
+
+    protected function getDetailedBases(Game $game)
+    {
+        return [
+            'first' => $this->getPlayerData($game, $game->first_base_player_id),
+            'second' => $this->getPlayerData($game, $game->second_base_player_id),
+            'third' => $this->getPlayerData($game, $game->third_base_player_id),
+        ];
+    }
+
+    protected function getPlayerData(Game $game, $playerId)
+    {
+        if (!$playerId) return null;
+
+        $player = Player::find($playerId);
+        if (!$player) return null;
+
+        $lineup = $game->lineups()->where('player_id', $playerId)->first();
+        
+        return [
+            'id' => $player->id,
+            'first_name' => $player->first_name,
+            'last_name' => $player->last_name,
+            'position' => $lineup ? $lineup->field_position : null
+        ];
     }
 }

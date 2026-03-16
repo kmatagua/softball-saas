@@ -26,21 +26,33 @@ export default {
                 </div>
                 
                 <!-- Primera Base (Derecha) -->
-                <div class="absolute bottom-0 right-0 w-8 h-8 -mr-4 -mb-4 rotate-45 bg-white shadow-lg flex items-center justify-center transition-all duration-300"
+                <div class="absolute bottom-0 right-0 w-12 h-12 -mr-6 -mb-6 rotate-45 bg-white shadow-lg flex items-center justify-center transition-all duration-300"
                      :class="{'ring-4 ring-amber-400 bg-amber-100': gameState?.bases?.first}">
-                     <span v-if="gameState?.bases?.first" class="text-xs font-bold text-slate-800 transform -rotate-45 text-center leading-tight">1B</span>
+                     <div v-if="gameState?.bases?.first" class="transform -rotate-45 flex flex-col items-center justify-center text-[10px] leading-tight text-slate-800">
+                        <span class="font-bold underline">1B</span>
+                        <span class="font-black uppercase truncate max-w-[40px]">{{ gameState.bases.first.last_name }}</span>
+                        <span class="opacity-70">({{ gameState.bases.first.position }})</span>
+                     </div>
                 </div>
                 
                 <!-- Segunda Base (Arriba) -->
-                <div class="absolute top-0 right-0 w-8 h-8 -mr-4 -mt-4 rotate-45 bg-white shadow-lg flex items-center justify-center transition-all duration-300"
+                <div class="absolute top-0 right-0 w-12 h-12 -mr-6 -mt-6 rotate-45 bg-white shadow-lg flex items-center justify-center transition-all duration-300"
                      :class="{'ring-4 ring-amber-400 bg-amber-100': gameState?.bases?.second}">
-                     <span v-if="gameState?.bases?.second" class="text-xs font-bold text-slate-800 transform -rotate-45 text-center leading-tight">2B</span>
+                     <div v-if="gameState?.bases?.second" class="transform -rotate-45 flex flex-col items-center justify-center text-[10px] leading-tight text-slate-800">
+                        <span class="font-bold underline">2B</span>
+                        <span class="font-black uppercase truncate max-w-[40px]">{{ gameState.bases.second.last_name }}</span>
+                        <span class="opacity-70">({{ gameState.bases.second.position }})</span>
+                     </div>
                 </div>
                 
                 <!-- Tercera Base (Izquierda) -->
-                <div class="absolute top-0 left-0 w-8 h-8 -ml-4 -mt-4 rotate-45 bg-white shadow-lg flex items-center justify-center transition-all duration-300"
+                <div class="absolute top-0 left-0 w-12 h-12 -ml-6 -mt-6 rotate-45 bg-white shadow-lg flex items-center justify-center transition-all duration-300"
                      :class="{'ring-4 ring-red-500 bg-red-100': gameState?.bases?.third}">
-                     <span v-if="gameState?.bases?.third" class="text-xs font-bold text-slate-800 transform -rotate-45 text-center leading-tight shadow-sm">3B</span>
+                     <div v-if="gameState?.bases?.third" class="transform -rotate-45 flex flex-col items-center justify-center text-[10px] leading-tight text-slate-800">
+                        <span class="font-bold underline">3B</span>
+                        <span class="font-black uppercase truncate max-w-[40px]">{{ gameState.bases.third.last_name }}</span>
+                        <span class="opacity-70">({{ gameState.bases.third.position }})</span>
+                     </div>
                 </div>
 
                 <!-- Líneas de foul y cuadro interior -->

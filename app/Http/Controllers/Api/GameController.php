@@ -63,24 +63,25 @@ class GameController extends Controller
                 'outs' => $game->outs,
                 'balls' => 0, // Por ahora el backend no trackea bolas y strikes completos por picheo
                 'strikes' => 0,
-                'bases' => [
-                    'first' => $game->first_base_player_id,
-                    'second' => $game->second_base_player_id,
-                    'third' => $game->third_base_player_id
-                ]
+                'bases' => $this->getDetailedBases($game)
             ],
 
             'events' => $game->events->map(function ($event) {
-            return [
+                return [
                     'id' => $event->id,
                     'team_id' => $event->team_id,
                     'team_name' => $event->team->name,
                     'inning' => $event->inning,
                     'event_type' => $event->event_type,
                     'runs' => $event->runs,
-                    'created_at' => $event->created_at
+                    'created_at' => $event->created_at,
+                    'player' => $event->player ? [
+                        'id' => $event->player->id,
+                        'name' => $event->player->first_name . ' ' . $event->player->last_name,
+                        'last_name' => $event->player->last_name,
+                    ] : null,
                 ];
-        }),
+            }),
 
             'lineups' => $game->lineups->map(function ($lineup) {
             return [
@@ -94,6 +95,32 @@ class GameController extends Controller
                 ];
         })
         ]);
+    }
+
+    protected function getDetailedBases(Game $game)
+    {
+        return [
+            'first' => $this->getPlayerData($game, $game->first_base_player_id),
+            'second' => $this->getPlayerData($game, $game->second_base_player_id),
+            'third' => $this->getPlayerData($game, $game->third_base_player_id),
+        ];
+    }
+
+    protected function getPlayerData(Game $game, $playerId)
+    {
+        if (!$playerId) return null;
+
+        $player = \App\Models\Player::find($playerId);
+        if (!$player) return null;
+
+        $lineup = $game->lineups()->where('player_id', $playerId)->first();
+        
+        return [
+            'id' => $player->id,
+            'first_name' => $player->first_name,
+            'last_name' => $player->last_name,
+            'position' => $lineup ? $lineup->field_position : null
+        ];
     }
 
     public function store(Request $request)

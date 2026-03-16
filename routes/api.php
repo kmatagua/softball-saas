@@ -65,6 +65,11 @@ Route::middleware(['auth:sanctum'])->group(function () {
             Route::get('/leagues/{id}/leaderboard', [LeagueController::class , 'leaderboard']);
 
             Route::get('/players/{id}/advanced-stats', [PlayerController::class , 'advancedStats']);
+
+            // 🔥 Lineups & Substitutions
+            Route::post('/game-lineups/substitute', [GameLineupController::class , 'substitute']);
+            Route::post('/game-lineups/update-reserve', [GameLineupController::class , 'updateReserve']);
+            Route::get('/teams/{team}/players', [TeamController::class , 'players']);
         }
         );
 
